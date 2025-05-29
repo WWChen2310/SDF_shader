@@ -1,13 +1,12 @@
-Shader "Custom/SDFPrimitives"
+Shader "Custom/SDFPrimitivesArray"
 {
     Properties
     {
         _Color ("Color", Color) = (1,1,1,1)
-        _SpherePos1 ("Sphere 1 Position", Vector) = (0, 0, 0, 1)
-        _SphereRadius1 ("Sphere 1 Radius", Float) = 1.0
-        _CubePos1 ("Cube 1 Position", Vector) = (2, 0, 0, 1)
-        _CubeSize1 ("Cube 1 Size", Vector) = (1, 1, 1, 0)
-        _SmoothFactor ("Smooth Union Factor", Float) = 0.5
+        _PrimitiveData ("Primitive Data Texture", 2D) = "black" {}
+        _MaxPrimitives ("Max Primitives", Int) = 16
+        _SmoothFactor ("Global Smooth Factor", Float) = 0.5
+        _SceneRotation ("Scene Rotation", Vector) = (0, 0, 0, 0)
         
         [Header(Lighting)]
         _LightPos ("Light Position", Vector) = (5, 5, 5, 0)
@@ -62,13 +61,23 @@ Shader "Custom/SDFPrimitives"
                 float3 rayDir : TEXCOORD2;
             };
 
+            // Primitive data structure
+            struct Primitive
+            {
+                float3 position;
+                float3 rotation;
+                float3 scale;
+                float type; // 0 = sphere, 1 = cube, 2 = cylinder, etc.
+                float enabled;
+            };
+
             // Properties
             fixed4 _Color;
-            float3 _SpherePos1;
-            float _SphereRadius1;
-            float3 _CubePos1;
-            float3 _CubeSize1;
+            sampler2D _PrimitiveData;
+            float4 _PrimitiveData_TexelSize;
+            int _MaxPrimitives;
             float _SmoothFactor;
+            float3 _SceneRotation;
             
             // Lighting
             float3 _LightPos;
@@ -100,30 +109,137 @@ Shader "Custom/SDFPrimitives"
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = v.uv;
                 
-                // Ray origin is camera position in world space
                 o.rayOrigin = _WorldSpaceCameraPos;
-                
-                // Calculate ray direction
                 float4 worldPos = mul(unity_ObjectToWorld, v.vertex);
                 o.rayDir = normalize(worldPos.xyz - o.rayOrigin);
                 
                 return o;
             }
 
-            // SDF for sphere
+            // Rotation matrices
+            float3x3 rotateX(float theta)
+            {
+                float c = cos(theta);
+                float s = sin(theta);
+                return float3x3(
+                    1, 0, 0,
+                    0, c, -s,
+                    0, s, c
+                );
+            }
+            
+            float3x3 rotateY(float theta)
+            {
+                float c = cos(theta);
+                float s = sin(theta);
+                return float3x3(
+                    c, 0, s,
+                    0, 1, 0,
+                    -s, 0, c
+                );
+            }
+            
+            float3x3 rotateZ(float theta)
+            {
+                float c = cos(theta);
+                float s = sin(theta);
+                return float3x3(
+                    c, -s, 0,
+                    s, c, 0,
+                    0, 0, 1
+                );
+            }
+            
+            float3x3 rotateXYZ(float3 euler)
+            {
+                euler *= 0.01745329251994329576923690768489; // PI/180
+                return mul(rotateZ(euler.z), mul(rotateY(euler.y), rotateX(euler.x)));
+            }
+
+            // Read primitive data from texture
+            Primitive ReadPrimitive(int index)
+            {
+                Primitive prim;
+                
+                // Each primitive uses 3 pixels (12 floats total)
+                float2 uv0 = float2((index * 3 + 0.5) * _PrimitiveData_TexelSize.x, 0.5);
+                float2 uv1 = float2((index * 3 + 1.5) * _PrimitiveData_TexelSize.x, 0.5);
+                float2 uv2 = float2((index * 3 + 2.5) * _PrimitiveData_TexelSize.x, 0.5);
+                
+                float4 data0 = tex2Dlod(_PrimitiveData, float4(uv0, 0, 0));
+                float4 data1 = tex2Dlod(_PrimitiveData, float4(uv1, 0, 0));
+                float4 data2 = tex2Dlod(_PrimitiveData, float4(uv2, 0, 0));
+                
+                prim.position = data0.xyz;
+                prim.type = data0.w;
+                prim.rotation = data1.xyz;
+                prim.enabled = data1.w;
+                prim.scale = data2.xyz;
+                
+                return prim;
+            }
+
+            // SDF primitives
             float sdSphere(float3 p, float3 center, float radius)
             {
                 return length(p - center) - radius;
             }
 
-            // SDF for box/cube
-            float sdBox(float3 p, float3 center, float3 size)
+            float sdBox(float3 p, float3 center, float3 size, float3 rotation)
             {
-                float3 q = abs(p - center) - size;
-                return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
+                float3 q = p - center;
+                float3x3 rot = rotateXYZ(rotation);
+                q = mul(transpose(rot), q);
+                float3 d = abs(q) - size;
+                return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0);
             }
 
-            // Smooth union operation
+            float sdCylinder(float3 p, float3 center, float2 hr, float3 rotation)
+            {
+                float3 q = p - center;
+                float3x3 rot = rotateXYZ(rotation);
+                q = mul(transpose(rot), q);
+                float2 d = abs(float2(length(q.xz), q.y)) - hr;
+                return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
+            }
+
+            float sdTorus(float3 p, float3 center, float2 t, float3 rotation)
+            {
+                float3 q = p - center;
+                float3x3 rot = rotateXYZ(rotation);
+                q = mul(transpose(rot), q);
+                float2 pq = float2(length(q.xz) - t.x, q.y);
+                return length(pq) - t.y;
+            }
+
+            // Evaluate single primitive
+            float EvaluatePrimitive(float3 p, Primitive prim)
+            {
+                if (prim.enabled < 0.5) return _MaxDist;
+                
+                float d = _MaxDist;
+                
+                if (prim.type < 0.5) // Sphere
+                {
+                    d = sdSphere(p, prim.position, prim.scale.x);
+                }
+                else if (prim.type < 1.5) // Cube
+                {
+                    d = sdBox(p, prim.position, prim.scale, prim.rotation);
+                }
+                else if (prim.type < 2.5) // Cylinder
+                {
+                    d = sdCylinder(p, prim.position, float2(prim.scale.x, prim.scale.y), prim.rotation);
+                }
+                else if (prim.type < 3.5) // Torus
+                {
+                    d = sdTorus(p, prim.position, float2(prim.scale.x, prim.scale.y), prim.rotation);
+                }
+                
+                return d;
+            }
+
+            // Smooth union
             float sdfSmoothUnion(float d1, float d2, float k)
             {
                 float h = clamp(0.5 + 0.5 * (d2 - d1) / k, 0.0, 1.0);
@@ -133,14 +249,32 @@ Shader "Custom/SDFPrimitives"
             // Combined SDF scene
             float GetDist(float3 p)
             {
-                float sphere1 = sdSphere(p, _SpherePos1, _SphereRadius1);
-                float cube1 = sdBox(p, _CubePos1, _CubeSize1);
+                // Apply inverse scene rotation to the point
+                float3x3 sceneRot = rotateXYZ(-_SceneRotation);
+                p = mul(sceneRot, p);
                 
-                // Combine primitives with smooth union
-                return sdfSmoothUnion(sphere1, cube1, _SmoothFactor);
+                float d = _MaxDist;
+                
+                // Read and evaluate all primitives
+                for (int i = 0; i < _MaxPrimitives; i++)
+                {
+                    Primitive prim = ReadPrimitive(i);
+                    float primDist = EvaluatePrimitive(p, prim);
+                    
+                    if (i == 0 || primDist >= _MaxDist)
+                    {
+                        d = min(d, primDist);
+                    }
+                    else
+                    {
+                        d = sdfSmoothUnion(d, primDist, _SmoothFactor);
+                    }
+                }
+                
+                return d;
             }
 
-            // Calculate normal using gradient
+            // Calculate normal
             float3 GetNormal(float3 p)
             {
                 float d = GetDist(p);
@@ -206,54 +340,35 @@ Shader "Custom/SDFPrimitives"
                 return 1.0 - _AOIntensity * occ;
             }
 
-            // Main lighting calculation
+            // Lighting
             float3 GetLighting(float3 p, float3 rd)
             {
                 float3 n = GetNormal(p);
                 float3 col = float3(0, 0, 0);
                 
-                // Main light direction and calculations
-                float3 lightDir = normalize(_LightPos - p);
-                float lightDist = length(_LightPos - p);
+                // Apply scene rotation to light position
+                float3x3 sceneRot = rotateXYZ(_SceneRotation);
+                float3 rotatedLightPos = mul(sceneRot, _LightPos);
                 
-                // Diffuse lighting (Lambertian)
+                float3 lightDir = normalize(rotatedLightPos - p);
+                float lightDist = length(rotatedLightPos - p);
+                
                 float diff = max(dot(n, lightDir), 0.0);
                 
-                // Specular lighting (Blinn-Phong)
                 float3 viewDir = normalize(-rd);
                 float3 halfDir = normalize(lightDir + viewDir);
                 float spec = pow(max(dot(n, halfDir), 0.0), _SpecularPower) * _SpecularIntensity;
                 
-                // Shadows
                 float shadow = GetSoftShadow(p + n * _SurfaceDist * 2.0, lightDir, 0.02, lightDist);
-                
-                // Ambient occlusion
                 float ao = GetAO(p, n);
-                
-                // Fresnel effect
                 float fresnel = pow(1.0 - max(dot(n, viewDir), 0.0), _FresnelPower) * _FresnelIntensity;
                 
-                // Combine lighting components
                 float3 ambient = _AmbientColor.rgb * ao;
                 float3 diffuse = _LightColor.rgb * _LightIntensity * diff * shadow;
                 float3 specular = _LightColor.rgb * spec * shadow;
                 float3 fresnelColor = _LightColor.rgb * fresnel;
                 
                 col = _Color.rgb * (ambient + diffuse) + specular + fresnelColor;
-                
-                // Unity's additional lights (point/spot lights)
-                #ifdef VERTEXLIGHT_ON
-                for(int i = 0; i < 4; i++)
-                {
-                    float3 lightPos = float3(unity_4LightPosX0[i], unity_4LightPosY0[i], unity_4LightPosZ0[i]);
-                    float3 lightDir2 = normalize(lightPos - p);
-                    float lightDist2 = length(lightPos - p);
-                    float atten = 1.0 / (1.0 + lightDist2 * lightDist2);
-                    
-                    float diff2 = max(dot(n, lightDir2), 0.0);
-                    col += unity_LightColor[i].rgb * diff2 * atten;
-                }
-                #endif
                 
                 return col;
             }
@@ -265,19 +380,17 @@ Shader "Custom/SDFPrimitives"
                 
                 float d = RayMarch(ro, rd);
                 
-                fixed4 col = fixed4(0.05, 0.05, 0.1, 1); // Sky color
+                fixed4 col = fixed4(0.05, 0.05, 0.1, 1);
                 
                 if(d < _MaxDist)
                 {
                     float3 p = ro + rd * d;
                     col.rgb = GetLighting(p, rd);
                     
-                    // Simple fog for depth
                     float fog = 1.0 - exp(-0.01 * d);
                     col.rgb = lerp(col.rgb, float3(0.05, 0.05, 0.1), fog);
                 }
                 
-                // Gamma correction
                 col.rgb = pow(col.rgb, 0.4545);
                 
                 return col;

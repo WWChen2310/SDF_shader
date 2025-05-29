@@ -149,24 +149,168 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sdfMaterial: {fileID: 2100000, guid: a157591f88127654b967138ceffa8243, type: 2}
-  spherePosition: {x: -1.61, y: 2.18, z: 0}
-  sphereRadius: 2
-  cubePosition: {x: 1.96, y: -0.82, z: 0}
-  cubeSize: {x: 2, y: 2, z: 2}
-  smoothFactor: 2.01
+  primitives:
+  - name: Center
+    enabled: 1
+    type: 1
+    position: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0}
+    scale: {x: 2, y: 2, z: 2}
+    animatePosition: 0
+    positionAnimSpeed: {x: 1, y: 1, z: 1}
+    positionAnimRadius: {x: 1, y: 1, z: 1}
+    animateRotation: 0
+    rotationSpeed: {x: 10, y: 20, z: 30}
+    animateScale: 0
+    scaleAnimSpeed: 1
+    scaleAnimMin: 0.5
+    scaleAnimMax: 1.5
+  - name: Cube 1
+    enabled: 1
+    type: 1
+    position: {x: 3, y: 3, z: 3}
+    rotation: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    animatePosition: 0
+    positionAnimSpeed: {x: 1, y: 1, z: 1}
+    positionAnimRadius: {x: 1, y: 1, z: 1}
+    animateRotation: 0
+    rotationSpeed: {x: 10, y: 20, z: 30}
+    animateScale: 0
+    scaleAnimSpeed: 1
+    scaleAnimMin: 0.5
+    scaleAnimMax: 1.5
+  - name: Sphere 2
+    enabled: 1
+    type: 0
+    position: {x: 3, y: -3, z: 3}
+    rotation: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    animatePosition: 0
+    positionAnimSpeed: {x: 1, y: 1, z: 1}
+    positionAnimRadius: {x: 1, y: 1, z: 1}
+    animateRotation: 0
+    rotationSpeed: {x: 10, y: 20, z: 30}
+    animateScale: 0
+    scaleAnimSpeed: 1
+    scaleAnimMin: 0.5
+    scaleAnimMax: 1.5
+  - name: Cube 3
+    enabled: 1
+    type: 1
+    position: {x: -3, y: -3, z: 3}
+    rotation: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    animatePosition: 0
+    positionAnimSpeed: {x: 1, y: 1, z: 1}
+    positionAnimRadius: {x: 1, y: 1, z: 1}
+    animateRotation: 0
+    rotationSpeed: {x: 10, y: 20, z: 30}
+    animateScale: 0
+    scaleAnimSpeed: 1
+    scaleAnimMin: 0.5
+    scaleAnimMax: 1.5
+  - name: Sphere 4
+    enabled: 1
+    type: 0
+    position: {x: -3, y: 3, z: 3}
+    rotation: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    animatePosition: 0
+    positionAnimSpeed: {x: 1, y: 1, z: 1}
+    positionAnimRadius: {x: 1, y: 1, z: 1}
+    animateRotation: 0
+    rotationSpeed: {x: 10, y: 20, z: 30}
+    animateScale: 0
+    scaleAnimSpeed: 1
+    scaleAnimMin: 0.5
+    scaleAnimMax: 1.5
+  - name: Sphere 5
+    enabled: 1
+    type: 0
+    position: {x: 3, y: 3, z: -3}
+    rotation: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    animatePosition: 0
+    positionAnimSpeed: {x: 1, y: 1, z: 1}
+    positionAnimRadius: {x: 1, y: 1, z: 1}
+    animateRotation: 0
+    rotationSpeed: {x: 10, y: 20, z: 30}
+    animateScale: 0
+    scaleAnimSpeed: 1
+    scaleAnimMin: 0.5
+    scaleAnimMax: 1.5
+  - name: Cube 6
+    enabled: 1
+    type: 1
+    position: {x: 3, y: -3, z: -3}
+    rotation: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    animatePosition: 0
+    positionAnimSpeed: {x: 1, y: 1, z: 1}
+    positionAnimRadius: {x: 1, y: 1, z: 1}
+    animateRotation: 0
+    rotationSpeed: {x: 10, y: 20, z: 30}
+    animateScale: 0
+    scaleAnimSpeed: 1
+    scaleAnimMin: 0.5
+    scaleAnimMax: 1.5
+  - name: Sphere 7
+    enabled: 1
+    type: 0
+    position: {x: -3, y: -3, z: -3}
+    rotation: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    animatePosition: 0
+    positionAnimSpeed: {x: 1, y: 1, z: 1}
+    positionAnimRadius: {x: 1, y: 1, z: 1}
+    animateRotation: 0
+    rotationSpeed: {x: 10, y: 20, z: 30}
+    animateScale: 0
+    scaleAnimSpeed: 1
+    scaleAnimMin: 0.5
+    scaleAnimMax: 1.5
+  - name: Cube 8
+    enabled: 1
+    type: 1
+    position: {x: -3, y: 3, z: -3}
+    rotation: {x: 0, y: 0, z: 0}
+    scale: {x: 1, y: 1, z: 1}
+    animatePosition: 0
+    positionAnimSpeed: {x: 1, y: 1, z: 1}
+    positionAnimRadius: {x: 1, y: 1, z: 1}
+    animateRotation: 0
+    rotationSpeed: {x: 10, y: 20, z: 30}
+    animateScale: 0
+    scaleAnimSpeed: 1
+    scaleAnimMin: 0.5
+    scaleAnimMax: 1.5
+  maxPrimitives: 16
+  globalSmoothFactor: 2
+  objectColor: {r: 1, g: 1, b: 1, a: 1}
+  sceneRotation: {x: 0, y: 0, z: 0}
+  animateSceneRotation: 1
+  sceneRotationSpeed: {x: 0, y: 10, z: 0}
+  lightPosition: {x: 5, y: 5, z: 5}
+  lightColor: {r: 1, g: 1, b: 1, a: 1}
+  lightIntensity: 4.34
+  ambientColor: {r: 0.1, g: 0.1, b: 0.2, a: 1}
+  specularPower: 39.6
+  specularIntensity: 0.5
+  shadowIntensity: 0.217
+  shadowSoftness: 8
+  fresnelPower: 1
+  fresnelIntensity: 0.3
+  aoSteps: 5
+  aoIntensity: 0.5
+  aoRadius: 0.1
   maxSteps: 100
   maxDistance: 100
   surfaceDistance: 0.01
-  objectColor: {r: 1, g: 1, b: 1, a: 1}
-  animateSphere: 0
-  sphereAnimSpeed: 1
-  sphereAnimRadius: 2
-  animateCube: 0
-  cubeRotationSpeed: 30
-  animateBlending: 0
-  blendAnimSpeed: 1
-  blendAnimMin: 0.1
-  blendAnimMax: 1
+  animateLight: 0
+  lightOrbitSpeed: 0.5
+  lightOrbitRadius: 8
+  lightOrbitHeight: 5
 --- !u!4 &426696503
 Transform:
   m_ObjectHideFlags: 0
